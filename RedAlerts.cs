@@ -6,6 +6,12 @@ using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Core;
 using System.Text.Json;
 using PlayerSettings;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System;
+using System.Net;
 
 namespace RedAlerts;
 
@@ -80,18 +86,34 @@ public partial class RedAlerts : BasePlugin
 	private async Task PollApiAsync(CancellationToken cancellationToken)
 	{
 		var interval = TimeSpan.FromSeconds(ConVars.IntervalSecondsCvar.Value);
-		using var httpClient = new HttpClient();
+
+		// Configure HttpClientHandler for automatic decompression
+		var handler = new HttpClientHandler
+		{
+			AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+		};
+
+		using var httpClient = new HttpClient(handler);
 
 		while (!cancellationToken.IsCancellationRequested)
 		{
 			try
 			{
 				var request = new HttpRequestMessage(HttpMethod.Get, "https://www.oref.org.il/WarningMessages/alert/alerts.json");
+				request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+				request.Headers.Add("Referer", "https://www.oref.org.il");
 
 				var response = await httpClient.SendAsync(request, cancellationToken);
 				response.EnsureSuccessStatusCode();
 
+				// Log response headers
+				Console.WriteLine($"[RedAlerts] Response headers: {response.Headers}");
+				Console.WriteLine($"[RedAlerts] Response content headers: {response.Content.Headers}");
+
 				var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+				// Log the raw content for debugging
+				Console.WriteLine($"[RedAlerts] Received content (length {content.Length}): {content}");
 
 				ApiResponse? apiResponse;
 
@@ -205,7 +227,7 @@ public partial class RedAlerts : BasePlugin
 			Console.WriteLine($"[RedAlerts] Showing alert to {player.PlayerName}: {CurrentAlert.Title} - {cities}");
 
 			player.PrintToChat(
-				$" \u2029 {ChatColors.Red}➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖ • Red Alert • ➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖{ChatColors.Default} \u2029 {ChatColors.Orange}{CurrentAlert.Title}:{ChatColors.Default}\u2029{cities}\u2029{ChatColors.Grey}/alerts • לביטול התרעות{ChatColors.Red}\u2029➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖➖{ChatColors.Default}\u2029"
+				$" \u2029 {ChatColors.Red}➖➖➖➖➖➖➖➖➖➖➖ • Red Alert • ➖➖➖➖➖➖➖➖➖➖➖{ChatColors.Default} \u2029 {ChatColors.Orange}{CurrentAlert.Title}:{ChatColors.Default}\u2029{cities}\u2029{ChatColors.Grey}/alerts • לביטול התרעות{ChatColors.Red}\u2029➖➖➖➖➖➖➖➖➖➖➖{ChatColors.Default}\u2029"
 			);
 		});
 	}
@@ -219,7 +241,7 @@ public partial class RedAlerts : BasePlugin
 			Id = "133719493820000000",
 			Cat = "1",
 			Title = "ירי רקטות וטילים",
-			Data = ["צפת - עיר", "צפת - נוף כנרת", "צפת - נוף רמת הגולן"],
+			Data = new[] { "צפת - עיר", "צפת - נוף כנרת", "צפת - נוף רמת הגולן" },
 			Desc = "היכנסו למרחב המוגן ושהו בו 10 דקות"
 		};
 
@@ -234,6 +256,6 @@ public class ApiResponse
 	public string Id { get; set; } = string.Empty;
 	public string Cat { get; set; } = string.Empty;
 	public string Title { get; set; } = string.Empty;
-	public string[] Data { get; set; } = [];
+	public string[] Data { get; set; } = Array.Empty<string>();
 	public string Desc { get; set; } = string.Empty;
 }
