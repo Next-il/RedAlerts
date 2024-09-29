@@ -1,4 +1,4 @@
-**[C#] Red Alerts** Announce red alerts to the server players.
+**[C#] Red Alerts**<br /> Announce red alerts to the server players.
 
 ## Installation
 
