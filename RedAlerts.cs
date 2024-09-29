@@ -127,7 +127,9 @@ public partial class RedAlerts : BasePlugin
 				}
 				else
 				{
+#if DEBUG
 					Console.WriteLine("[RedAlerts] No alerts available.");
+#endif
 					CurrentAlert = null;
 				}
 			}
