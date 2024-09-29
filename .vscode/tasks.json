@@ -7,9 +7,9 @@
       "type": "process",
       "args": [
         "build",
-        "${workspaceFolder}/Alerts.csproj",
+        "${workspaceFolder}/RedAlerts.csproj",
         "--output",
-        "Alerts"
+        "RedAlerts"
       ],
       "problemMatcher": "$msCompile",
       "group": {
