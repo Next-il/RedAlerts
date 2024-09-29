@@ -8,5 +8,5 @@
 
 ## Features
 
-💎 Players can toggle the alerts (using the !alerts command) <br />
+💎 Players can toggle the alerts (using the `!alerts` command) <br />
 💎 Choose your own check interval (using the `alerts_interval` convar) <br />
