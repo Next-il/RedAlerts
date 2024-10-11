@@ -3,14 +3,10 @@ using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Core.Attributes;
 using CounterStrikeSharp.API.Modules.Utils;
+using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
 using System.Text.Json;
 using PlayerSettings;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System;
 using System.Net;
 
 namespace RedAlerts;
@@ -99,21 +95,22 @@ public partial class RedAlerts : BasePlugin
 		{
 			try
 			{
+#if DEBUG
+				Console.WriteLine("[RedAlerts] Polling API...");
+#endif
 				var request = new HttpRequestMessage(HttpMethod.Get, "https://www.oref.org.il/WarningMessages/alert/alerts.json");
-				request.Headers.Add("X-Requested-With", "XMLHttpRequest");
-				request.Headers.Add("Referer", "https://www.oref.org.il");
+				// request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+				// request.Headers.Add("Referer", "https://www.oref.org.il");
 
 				var response = await httpClient.SendAsync(request, cancellationToken);
 				response.EnsureSuccessStatusCode();
 
-				// Log response headers
-				Console.WriteLine($"[RedAlerts] Response headers: {response.Headers}");
-				Console.WriteLine($"[RedAlerts] Response content headers: {response.Content.Headers}");
-
 				var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
+#if DEBUG
 				// Log the raw content for debugging
 				Console.WriteLine($"[RedAlerts] Received content (length {content.Length}): {content}");
+#endif
 
 				ApiResponse? apiResponse;
 
@@ -129,22 +126,8 @@ public partial class RedAlerts : BasePlugin
 
 				if (apiResponse != null && apiResponse.Data != null && apiResponse.Data.Length > 0)
 				{
-#if DEBUG
-					Console.WriteLine("[RedAlerts] DemoFunction called with data:");
-					Console.WriteLine($"ID: {apiResponse.Id}");
-					Console.WriteLine($"Category: {apiResponse.Cat}");
-					Console.WriteLine($"Title: {apiResponse.Title}");
-					Console.WriteLine($"Description: {apiResponse.Desc}");
-					Console.WriteLine("Data:");
-
-					foreach (var item in apiResponse.Data)
-					{
-						Console.WriteLine(item);
-					}
-#endif
-
-					// Print to chat
 					CurrentAlert = apiResponse;
+					// Print to chat
 					ChatAll();
 				}
 				else
@@ -157,7 +140,7 @@ public partial class RedAlerts : BasePlugin
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"[RedAlerts] Error polling API: {ex.Message}");
+				Console.WriteLine($"[RedAlerts] Error polling Pakar API: {ex.Message}");
 			}
 
 			await Task.Delay(interval, cancellationToken);
@@ -169,6 +152,9 @@ public partial class RedAlerts : BasePlugin
 		// Check if there is an alert to show
 		if (CurrentAlert == null || CurrentAlert.Data.Length == 0)
 		{
+#if DEBUG
+			Console.WriteLine("[RedAlerts] No alerts to show.");
+#endif
 			return;
 		}
 
@@ -190,6 +176,10 @@ public partial class RedAlerts : BasePlugin
 
 			string cities = string.Join(", ", CurrentAlert.Data);
 
+#if DEBUG
+			Console.WriteLine($"[RedAlerts] Showing alert to {player.PlayerName}: {CurrentAlert.Title} - {cities}");
+#endif
+
 			player.PrintToCenterHtml(
 				$"<pre>" +
 				$"<strong class='fontSize-m fontWeight-Bold' color='red'>{CurrentAlert.Title}</strong><br>" +
@@ -205,6 +195,9 @@ public partial class RedAlerts : BasePlugin
 	{
 		if (CurrentAlert == null)
 		{
+#if DEBUG
+			Console.WriteLine("[RedAlerts] No alerts to show chat.");
+#endif
 			return;
 		}
 
@@ -224,8 +217,9 @@ public partial class RedAlerts : BasePlugin
 			}
 
 			string cities = string.Join(", ", CurrentAlert.Data);
+#if DEBUG
 			Console.WriteLine($"[RedAlerts] Showing alert to {player.PlayerName}: {CurrentAlert.Title} - {cities}");
-
+#endif
 			player.PrintToChat(
 				$" \u2029 {ChatColors.Red}➖➖➖➖➖➖➖➖➖➖➖ • Red Alert • ➖➖➖➖➖➖➖➖➖➖➖{ChatColors.Default} \u2029 {ChatColors.Orange}{CurrentAlert.Title}:{ChatColors.Default}\u2029{cities}\u2029{ChatColors.Grey}/alerts • לביטול התרעות{ChatColors.Red}\u2029➖➖➖➖➖➖➖➖➖➖➖{ChatColors.Default}\u2029"
 			);
@@ -253,9 +247,19 @@ public partial class RedAlerts : BasePlugin
 
 public class ApiResponse
 {
+	[JsonPropertyName("id")]
 	public string Id { get; set; } = string.Empty;
+
+	[JsonPropertyName("cat")]
 	public string Cat { get; set; } = string.Empty;
+
+	[JsonPropertyName("title")]
 	public string Title { get; set; } = string.Empty;
+
+	[JsonPropertyName("data")]
 	public string[] Data { get; set; } = Array.Empty<string>();
+
+	[JsonPropertyName("desc")]
 	public string Desc { get; set; } = string.Empty;
 }
+
